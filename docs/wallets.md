@@ -286,3 +286,81 @@ Steps:
 1. The software SHOULD procede to the next step automatically without requesting submission.
 1. After verification of the final string the wallet should recover the master seed and import it.
 1. Wallets MAY make the user perform a recovery from scratch after verification as an extra layer of assurance the backup has been created and transcribed correctly.
+
+
+
+
+
+## Codex32 share set generation guidance
+
+
+- 
+SSS Wallets: 
+SHOULD support k=2 and k=3 to allow users to more flexibly manage risk.
+MAY choose k=2 as a sensible default as it's the minimum threshold that provides SSS benefits.
+MAY support k=0 for fresh master seeds (be a SSS+US wallet) and SHOULD support k=0 for exporting existing master seeds.
+SHOULD NOT show `k` values higher than `3` in a simple GUI as they are a bad trade-off between usability and robustness (which
+are damaged) and security (which is improved). Power users may enable them.
+
+#### Identifier
+
+A four-character, valid lowercase bech32 string (not 1, i, o or b) to use in the resulting BIP-93 output. If not specified, this SHOULD be generated the master seed's bip32 fingerprint encoded as bech32.
+
+SSS wallet Note: for fresh codex32 share sets this default requires either generating the secret first to calculate the fingerprint or relabling the strings after the first `k` have been produced and the master seed payload recovered.
+- TODO Preferred implementation details are TBD but lean towards relabeling, but there are advantages either way.
+  - For example not extracting `k` entropy at once allows the system to accumulate more randomness between shares.
+
+##### Default identifier
+
+Regarding the identifer SecretGWs:
+MUST NOT fix 3+ characters as this harms disambiguation of different master seeds.
+SHOULD use a deterministic default Hash160 of `master_public_key` data (e.g. BIP-32 key fingerprint) so wallets MAY give useful help finding the correct codex32 strings given descriptors and PSBTs.
+SHOULD NOT use hash functions (e.g. RIPEMD160, sha256d) of `master_seed`, `master_xprv` or any other private data to set the identifier.
+  - "seed_id" which was RIPEMD160(master_seed) and "WIF" which appends SHA256d(x10+seed_hex+x01) have both been deprecated in Bitcoin Core for years and at any rate are less useful and less safe than the fingerprint.
+  - Hashes assist an attacker when he has between `k - 1` and `k` shares and is brute forcing what's left. Hashes are much much faster than public key derivations.
+MAY fix 1-2 identifier characters to store public information or cosmetically brand strings.
+
+
+US Wallets ONLY:
+
+May use non-cryptographically secure deterministic default identifiers (e.g. Parity, CRC or BCH codes) to improve overall error correction.
+- US Wallets that plan to support SSS MUST remove this code from their implementation prior to beginning work to implement SSS.
+
+SSS Wallets:
+
+MUST NOT ever derive a default identifier deterministically directly from the seed, private key(s), hashes there of or checksums there of without a contravening public derviation.
+
+#### Payload Padding
+Wallets SHOULD use payload `payload` CRC padding with polynomnial `1<<pad_len | 3` as this improves bit error detection to any 2 consecutive bits on 128-bit strings and any 4 consecutive bits on 256-bit strings. The bech32 character set is optimized to produce 1 bit errors between the most similar characters so this may help more than it looks at first glance.
+
+We should standardize this so that recovery tools of the future can exploit this to improve recovery speed 4-16x for 16 and 32 byte seeds.
+It IS hand computable, probably easier than the full sharing and checksumming but I haven't tested it yet.
+And ammendment to the book could be issued, and the presence or absence of that ammendement could inform error correction software whether to validate this CRC.
+Wallets MAY use other padding or allow power users to specify it.
+
+### Codex32 share set backup process:
+
+1. User selects OPTIONAL parameters (`k`, `identifier`, `n`, `bitlength`, `indices`...).
+1. For the first codex32 string:
+    1. Entropy or an existing master seed is extracted and encoded into a codex32 string.
+        * An existing master seed MUST use secret index 'S'.
+        * Other entropy SHOULD use share index 'A'.
+    1. Display and confirm as above.
+1. For the next `k - 1` codex32 shares:
+    1. Entropy is extracted and encoded in a codex32 share with the next share index.
+    1. Display and confirm as above.
+1. For the next `n - k` codex32 strings:
+    1. the initial `k` codex32 strings are interpolated to the next share index.
+    1. Display and confirm as above.
+1. Once all `n` shares are confirmed, the generation process is complete.
+1. The wallet should then either:
+  * for a fresh master seed, recover it, either:
+    * automatically from memory and import this.
+    * manually as per "Import Support" requesting `k` unique freshly written codex32 shares.
+  * an existing master seed, return to the wallet that was just backed up.
+
+
+Partial verification:
+
+    - At optional high `k` options exeed the windows available in the current undisplayed share and should be drawn from adjacent shares:
+      - At even higher `k` typing the 4-character window with a binary tree may be more ergonomic than scrolling.
