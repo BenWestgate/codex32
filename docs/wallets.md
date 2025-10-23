@@ -80,7 +80,7 @@ The process for entering codex32 strings is:
 Unlike in BIP39 or other specifications, no PBKDF or other pre-processing should be applied.
 
 ## Generate Unshared Secrets Support
-TODO stay under 60-80 lines and 800-1000 words
+
 There are two levels of generate support:
 
 * The ability to generate seeds; here we essentially just have recommendations about encoding, display and confirmation.
@@ -101,62 +101,51 @@ Codex provides users instructions on doing share generation themselves.
 
 The remainder of this sub-heading gives guidance on exporting seeds as codex32 secrets without SSS. Wallet developers planning to implement SSS should read it first as almost all of it will apply to SSS.
 
+### Unshared (single-string) semantics — REQUIRED
+
+For single-string codex32 secret exports ("unshared") the following semantics are REQUIRED.
+
+1. Bitlength
+   * Wallets MUST support generating 128- or 256-bit seeds;
+   * SHOULD support generating 128-bit seeds;
+   * MAY support generating 256- or 512-bit seeds; other lengths are NOT RECOMMENDED.
+     - Wallets which use a 512-bit BIP-0032 master seed (BIP39) SHOULD generate a fresh 128-bit master seed and encourage users to sweep funds to a new seed rather than export it.
+       - This can be done deterministically from the existing master seed using the [codex32 BIP-85 application](https://github.com/bitcoin/bips/pull/1958) without needing new entropy if it is merged.
+
+1. Header fields
+   * The share index MUST be `S`.
+   * The threshold digit SHOULD be `0`.
+   * For an unshared secret, the threshold digit is ignored so MAY be used for cosmetic purposes.
+
+1. Identifier policy
+   * An identifier is used to group shares belonging to the same secret when shares exist.
+   * For generated secrets the identifier SHOULD be chosen by the device and SHOULD be unique per master seed.
+     * The default SHOULD be the bech32-encoded BIP-0032 master key fingerprint.
+       * By assuming this default, even stateless wallets MAY give useful help finding the correct codex32 strings to import given descriptors and PSBTs.
+   * Wallets MAY allow user specified identifiers.
+   * Collisions are unlikely but a wallet MAY reject identifiers that conflict with an existing identifier and SHOULD reject headers that are not unique for different master seeds or share sets.
+     * Wallets should store, subject to hardware limitations, identifiers used and their corresponding master fingerprint to assist with ensuring uniqueness by warning the user they're reusing an identifier previously confirmed.
+  
+1. Human-readable part policy
+   * Wallets MUST NOT use custom human-readable parts `hrp` without first registering them with [SLIP-0173](https://github.com/satoshilabs/slips/blob/master/slip-0173.md#uses-of-codex32).
+   * New `hrp` SHOULD use 2 character strings to simplify implementations' assumptions about lengths.
+   * Wallets MUST NOT expose `hrp` as an option as it's fixed by specific network applications.
+   * Bitcoin mainnet wallets MUST support 'ms' for master seeds.
+
 ### Codex32 secret backup process:
 
 1. User selects OPTIONAL parameters (`identifier`, `bitlength`).
 1. Entropy or an existing master seed is extracted and encoded into a codex32 secret.
 1. Secret displays for user to note down on paper or metal.
 1. Confirm backup by asking user to re-enter from their transcription.
-   * Note: This has different rules than during import/recovery.
+   * Note: This has different rules than during import.
 1. Once the codex32 secret is confirmed, the wallet should recover the master seed:
    * automatically from memory and import this; or
-   * manually as per "Import Support" requesting the freshly written codex32 secret.
+   * manually as per "Import Support" by requesting the freshly written codex32 secret.
 1. After wallet import, the unshared secret generation process is complete.
 
 **The master seed should be used directly as a master seed, as specified in BIP32.**
 Unlike in BIP39 or other specifications, no PBKDF or other pre-processing should be applied.
-
-### Select parameters guidance
-
-#### Bitlength
-
-Wallets MUST support generating 128- or 256-bit seeds;
-SHOULD support generating 128-bit seeds;
-MAY support generating 256- or 512-bit seeds; other lengths are NOT RECOMMENDED.
-Wallets SHOULD support export of 128- or 256-bit seeds; 512-bit seeds or other lengths are NOT RECOMMENDED.
-  - Wallets which use a 512-bit BIP-0032 master seed (BIP39) SHOULD generate a fresh 128-bit master seed and encourage users to sweep funds to a new seed
-    - This can be done deterministically from the existing master seed using the [codex32 BIP-85 application](https://github.com/bitcoin/bips/pull/1958) without needing new entropy if it is merged.
-
-#### Human-readable part
-MUST NOT use custom human-readable parts `hrp` without first registering them with BIP-0093.
-- SHOULD use 2 character strings to simplify implementations' assumptions about lengths.
-MUST NOT be exposed as an option as `hrp` is fixed for specific network applications.
-MUST support 'ms' for Bitcoin mainnet wallet master seeds.
-
-#### Threshold
-
-A digit in 0, 2 through 9.
-
-For an unshared secret, the threshold parameter (the first digit of the data part) is ignored.
-US Wallets MAY use the threshold digit as a cosmetic identifier character, provided it is a digit.
-If the identifier is unspecified the digit "0" is recommended.
-
-#### Identifier
-
-A four-character, valid lowercase bech32 string (not 1, i, o or b) to use in the resulting BIP-93 output.
-If not specified, this SHOULD be generated from the master seed's bech32-encoded bip32 fingerprint.
-- By assuming this default, even stateless wallets MAY give useful help finding the correct codex32 strings to import given descriptors and PSBTs.
-Wallets MAY fix 1-2 identifier characters to store public information or cosmetically brand strings.
-Wallets MUST NOT fix 3+ characters as this harms disambiguation of different master seeds.
-MUST NOT use hash functions (e.g. RIPEMD160, sha256d) of `master_seed`, `master_xprv` or any other private data to set the identifier.
-  - "seed_id" which was RIPEMD160(master_seed) TODO (verify this isn't Hash160(master_seed)) and "WIF" which appends SHA256d(x10+seed_hex+x01)[:4] have both been deprecated for years and at any rate are less useful and safe than the fingerprint.
-  - Hashes help an attacker with part of the seed brute force what's left. Hashes are much faster than public key derivations.
-SHOULD NOT reuse any specific identifier across multiple master seeds the user may need to disambiguate.
-- Wallets should store, subject to hardware limitations, the identifiers used and their corresponding master public key fingerprint to assist with ensuring uniqueness by warning the user they're reusing an identifier previously confirmed.
-
-US Wallets ONLY:
-MAY use non-cryptographically secure deterministic default identifiers (e.g. Parity, CRC or BCH codes) to improve overall error correction.
-- US Wallets that plan to support SSS MUST remove this code from their implementation prior to beginning work to implement SSS.
 
 ### Extract and encode entropy
 
@@ -206,7 +195,7 @@ def convertbits(data, frombits, tobits, pad=True, pad_val=-1):
     return ret
 ```
 
-Rationale: using a CRC code slightly helps error detection beyond the limits of the codex32 checksum, these are also hand-computable. It covers only the master seed bits as header data is not necessary to recover.
+Rationale: using a CRC code improves error detection beyond the limits of the codex32 checksum, these are also hand-computable. Only master seed bits are covered as header is unnecessary to recover.
 
 ### Display and confirmation
 
@@ -286,3 +275,17 @@ Steps:
 1. The software SHOULD procede to the next step automatically without requesting submission.
 1. After verification of the final string the wallet should recover the master seed and import it.
 1. Wallets MAY make the user perform a recovery from scratch after verification as an extra layer of assurance the backup has been created and transcribed correctly.
+
+### Test vectors
+
+Vector 1 — 128-bit unshared
+- label: ut128-1
+- entropy_hex: 000102030405060708090a0b0c0d0e0f
+- codex32_unshared: ms10x3ppsqqqsyqcyq5rqwzqfpg9scrgwpugdxwtavhv7w48
+- decoded_entropy_hex: 000102030405060708090a0b0c0d0e0f
+
+Vector 2 — 256-bit unshared
+- label: ut256-1
+- entropy_hex: ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100
+- codex32_unshared: ms10lwkksllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqpmlzwj5vy2a48f
+- decoded_entropy_hex: ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100
