@@ -14,12 +14,12 @@
 
 //! codex32 Reference Implementation
 //!
-//! This project is a reference implementation of BIP-XXX "codex32", a project
+//! This project is a reference implementation of BIP-0093 "codex32", a project
 //! by Leon Olson Curr and Pearlwort Snead to produce checksummed and secret-shared
 //! BIP32 master seeds.
 //!
 //! References:
-//!   * BIP-XXX <https://github.com/apoelstra/bips/blob/2023-02--volvelles/bip-0000.mediawiki>
+//!   * BIP-0093 <https://github.com/bitcoin/bips/blob/master/bip-0093.mediawiki>
 //!   * The codex32 website <https://www.secretcodex32.com>
 //!   * BIP-0173 "bech32" <https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki>
 //!   * BIP-0032 "BIP 32" <https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki>
@@ -97,6 +97,13 @@ pub enum Case {
     Upper,
 }
 
+fn expanded_length(s: &str) -> usize {
+    match s.rsplit_once('1') {
+        Some((hrp, data)) => 2 * hrp.len() + 1 + data.len(),
+        None => 1 + s.len(),
+    }
+}
+
 /// A codex32 string, containing a valid checksum
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Codex32String(String);
@@ -120,7 +127,7 @@ impl Codex32String {
     /// Construct a codex32 string from a not-yet-checksummed string
     pub fn from_unchecksummed_string(mut s: String) -> Result<Self, Error> {
         // Determine what checksum to use and extend the string
-        let (len, mut checksum) = if s.len() < 81 {
+        let (len, mut checksum) = if expanded_length(&s) < 81 {
             (13, checksum::Engine::new_codex32_short())
         } else {
             (15, checksum::Engine::new_codex32_long())
@@ -146,9 +153,10 @@ impl Codex32String {
 
     /// Construct a codex32 string from an already-checksummed string
     pub fn from_string(s: String) -> Result<Self, Error> {
-        let (name, mut checksum) = if s.len() >= 48 && s.len() < 94 {
+        let codeword_length = expanded_length(&s);
+        let (name, mut checksum) = if s.len() >= 48 && codeword_length < 94 {
             ("short", checksum::Engine::new_codex32_short())
-        } else if s.len() >= 125 && s.len() < 128 {
+        } else if codeword_length >= 96 && s.len() < 128 {
             ("long", checksum::Engine::new_codex32_long())
         } else {
             return Err(Error::InvalidLength(s.len()));
@@ -179,7 +187,7 @@ impl Codex32String {
             Some((s1, s2)) => (s1, s2),
             None => ("", &self.0[..]),
         };
-        let checksum_len = if self.0.len() > 93 { 15 } else { 13 };
+        let checksum_len = if expanded_length(&self.0) > 93 { 15 } else { 13 };
         let ret = Parts {
             hrp,
             threshold: match s.as_bytes()[0] {
@@ -361,7 +369,7 @@ impl Codex32String {
         }
 
         // Initialize checksum engine with HRP and header
-        let mut checksum = if data.len() < 51 {
+        let mut checksum = if expanded_length(&ret) < 81 {
             checksum::Engine::new_codex32_short()
         } else {
             checksum::Engine::new_codex32_long()
@@ -605,14 +613,13 @@ mod tests {
         let wrong_checksums = [
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxurfvwmdcmymdufv",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxcsyppjkd8lz4hx3",
-            "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxu6hwvl5p0l9xf3c",
-            "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxwqey9rfs6smenxa",
-            "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxv70wkzrjr4ntqet",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx3hmlrmpa4zl0v",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxrfggf88znkaup",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxpt7l4aycv9qzj",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxus27z9xtyxyw3",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxcwm4re8fs78vn",
+            "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxr335l5tv88js3",
+            "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxky0ua3ha84qk8",
         ];
         for chk in wrong_checksums {
             let err = Codex32String::from_string(chk.into());
@@ -632,17 +639,16 @@ mod tests {
     #[test]
     fn bip_invalid_improper_length() {
         let bad_length = [
+            "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxwqey9rfs6smenxa",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxw0a4c70rfefn4",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxk4pavy5n46nea",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxx9lrwar5zwng4w",
-            "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxr335l5tv88js3",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxvu7q9nz8p7dj68v",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxpq6k542scdxndq3",
             "ms10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxkmfw6jm270mz6ej",
             "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxzhddxw99w7xws",
             "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxx42cux6um92rz",
             "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxarja5kqukdhy9",
-            "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxky0ua3ha84qk8",
             "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx9eheesxadh2n2n9",
             "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx9llwmgesfulcj2z",
             "ms12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx02ev7caq6n9fgkf",
