@@ -142,6 +142,7 @@ impl Codex32String {
         // Compute the checksum
         checksum.input_hrp(hrp)?;
         checksum.input_data_str(real_string)?;
+        checksum.input_own_target();
         for ch in checksum.into_residue() {
             s.push(ch.to_char());
         }
@@ -463,6 +464,9 @@ mod tests {
         assert_eq!(c32_parts.payload, "xxxxxxxxxxxxxxxxxxxxxxxxxx");
         assert_eq!(c32_parts.checksum, "4nzvca9cmczlw");
         assert_eq!(hex(&c32_parts.data()), "318c6318c6318c6318c6318c6318c631");
+        let created = Codex32String::from_unchecksummed_string(secret[..secret.len() - 13].into())
+            .unwrap();
+        assert_eq!(Codex32String::from_string(created.to_string()).unwrap(), created);
         // Don't check master node xpriv; this is implied by the master seed
         // and would require extra dependencies to compute
     }
@@ -573,6 +577,32 @@ mod tests {
             hex(&long_seed.parts().data()),
             "dc5423251cb87175ff8110c8531d0952d8d73e1194e95b5f19d6f9df7c01111104c9baecdfea8cccc677fb9ddc8aec5553b86e528bcadfdcc201c17c638c47e9",
         );
+    }
+
+    #[test]
+    fn bip_vector_6() {
+        let vectors = [
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxt2gjsqpuwvc6p",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxwgll4xcjyjke0wv",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxyc57nnpvpcnhggt",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdpu39xl2lkru3g4",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx307qvc427fmdl9a",
+        ];
+        for (i, vector) in vectors.iter().enumerate() {
+            let seed = Codex32String::from_string((*vector).into()).unwrap();
+            assert_eq!(seed.parts().data().len(), i + 43);
+        }
+    }
+
+    #[test]
+    fn checksum_boundaries() {
+        let parse = |length: usize| {
+            Codex32String::from_string(format!("ms1{}", "q".repeat(length - 5)))
+        };
+        assert!(matches!(parse(93), Err(Error::InvalidChecksum { checksum: "short", .. })));
+        assert!(matches!(parse(94), Err(Error::InvalidLength(..))));
+        assert!(matches!(parse(95), Err(Error::InvalidLength(..))));
+        assert!(matches!(parse(96), Err(Error::InvalidChecksum { checksum: "long", .. })));
     }
 
     #[test]
