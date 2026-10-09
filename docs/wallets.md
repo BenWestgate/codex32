@@ -107,7 +107,7 @@ Export is worthwhile without sharing: the checksum corrects errors, can be check
   * Wallets MUST NOT fix 3 or more characters (for example `SEED` for every seed). They MAY fix 1 or 2.
   * Wallets MUST NOT derive it from a hash of the seed, a private key or other private data. Hashes are far faster to test than key derivation.
   * A secret SHOULD default to the first 20 bits of its BIP32 fingerprint, so descriptors and PSBTs point to the right card.
-  * A share set SHOULD default to a fresh random identifier. A fingerprint on shares gives a holder of `k` - 1 shares an offline check for guesses at the rest, and links every card to its wallet.
+  * A share set MAY use a random identifier, or a unique one the user chooses. A fingerprint on shares gives a holder of `k` - 1 shares an offline check for guesses at the rest, and links every card to its wallet.
   * Re-sharing MUST NOT reuse the threshold and identifier of the set being re-shared, so shares from the two sets cannot be mixed.
   * Wallets SHOULD remember identifiers they have issued and warn before reusing one.
 * **Indices:** wallets MAY pick share indices at random so the cards do not reveal how many exist.
