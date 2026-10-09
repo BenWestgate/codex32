@@ -79,288 +79,84 @@ The process for entering codex32 strings is:
 **The master seed should be used directly as a master seed, as specified in BIP32.**
 Unlike in BIP39 or other specifications, no PBKDF or other pre-processing should be applied.
 
-## Generate Unshared Secrets Support
-TODO stay under 60-80 lines and 800-1000 words
-There are two levels of generate support:
+## Generate Support
 
-* The ability to generate seeds; here we essentially just have recommendations about encoding, display and confirmation.
-* The ability to generate share sets on the device; here our guidance is more involved.
+There are two levels of generation support:
 
-Even wallets that don't need SSS features we encourage to support codex32 seed export as this has several advantages over BIP-39:
-- Checksum corrects up to 4 errors and 13 erasures during import
-- Hand-verifiable checksums isolate seed integrity checks from hardware exposure risks
-- Fixed-length compact encodings are faster to write and confirm
-- No wordlist or PBKDF2 dependencies
-- Forwards-compatible with Codex32 SSS and SLIP-39
-- The added functionality is isolated from the rest of the wallet (once the seed is exported you don't care where it went to)
-- The technical difficulty is low (roughly on par with that of generating Segwit addresses)
+* Exporting a seed as an unshared codex32 secret (threshold `0`, index `S`).
+* Generating share sets. Everything said about secrets also applies to shares.
 
-Supporting share set generation is a little more involved so the tradeoff between
-implementation complexity and user value is less clear, especially since the
-Codex provides users instructions on doing share generation themselves.
+Export is worthwhile without sharing: the checksum corrects errors, can be checked by hand, and needs no wordlist or PBKDF2.
 
-The remainder of this sub-heading gives guidance on exporting seeds as codex32 secrets without SSS. Wallet developers planning to implement SSS should read it first as almost all of it will apply to SSS.
+### Entropy
 
-### Codex32 secret backup process:
+* Random shares and random identifiers MUST come from the same source as fresh seeds, including any user entropy the wallet mixes in.
+  Predictable shares let someone holding fewer than `k` shares recover the secret. Random shares MUST NOT be derived from the seed.
+* If user entropy is the only source, or the wallet counts on it in case its RNG is weak, the wallet MUST collect at least as many bits as the seed length it claims: 50 d6 rolls for 128 bits, 100 for 256.
+* A wallet MUST NOT display intermediate values that determine the seed, such as a running hash of dice rolls.
+* A seed that is not a valid BIP32 master key MUST be discarded and drawn again.
 
-1. User selects OPTIONAL parameters (`identifier`, `bitlength`).
-1. Entropy or an existing master seed is extracted and encoded into a codex32 secret.
-1. Secret displays for user to note down on paper or metal.
-1. Confirm backup by asking user to re-enter from their transcription.
-   * Note: This has different rules than during import/recovery.
-1. Once the codex32 secret is confirmed, the wallet should recover the master seed:
-   * automatically from memory and import this; or
-   * manually as per "Import Support" requesting the freshly written codex32 secret.
-1. After wallet import, the unshared secret generation process is complete.
+### Parameters
 
-**The master seed should be used directly as a master seed, as specified in BIP32.**
-Unlike in BIP39 or other specifications, no PBKDF or other pre-processing should be applied.
+* **Length:** 128-bit SHOULD be the default; 256-bit MAY be offered. 512-bit strings (127 characters) are NOT RECOMMENDED for hand backup.
+  A wallet with a 512-bit BIP39 seed SHOULD offer a fresh 128-bit seed and a sweep; the pending [BIP-85 codex32 application](https://github.com/bitcoin/bips/pull/1958) can derive one.
+* **Human-readable part:** only `ms`, and not a user option.
+  Wallets MUST NOT emit unregistered prefixes: other BIP-93 wallets cannot recover them.
+* **Threshold:** `0` for a secret. Share sets SHOULD offer `k` = 2 and 3, with 2 as the default; higher values only for power users.
+* **Identifier:** public metadata, not authentication.
+  * Wallets MUST NOT fix 3 or more characters (for example `SEED` for every seed). They MAY fix 1 or 2.
+  * Wallets MUST NOT derive it from a hash of the seed, a private key or other private data. Hashes are far faster to test than key derivation.
+  * A secret SHOULD default to the first 20 bits of its BIP32 fingerprint, so descriptors and PSBTs point to the right card.
+  * A share set MAY use a random identifier, or a unique one the user chooses. A fingerprint on shares gives a holder of `k` - 1 shares an offline check for guesses at the rest, and links every card to its wallet.
+  * Re-sharing MUST NOT reuse the threshold and identifier of the set being re-shared, so shares from the two sets cannot be mixed.
+  * Wallets SHOULD remember identifiers they have issued and warn before reusing one.
+* **Indices:** wallets MAY pick share indices at random so the cards do not reveal how many exist.
+* **Padding:** random shares MUST have uniformly random padding. The padding of `S` is arbitrary; wallets MAY set it to a CRC of the seed bits, with generator `(1 << p) | 3` and initial value 0, where `p` is the number of padding bits.
+  Importers MUST accept any padding. For a fresh share set, the last random share is redrawn until `S` is a valid master key with the chosen padding.
 
-### Select parameters guidance
+### Backup process
 
-#### Bitlength
+For a secret:
 
-Wallets MUST support generating 128- or 256-bit seeds;
-SHOULD support generating 128-bit seeds;
-MAY support generating 256- or 512-bit seeds; other lengths are NOT RECOMMENDED.
-Wallets SHOULD support export of 128- or 256-bit seeds; 512-bit seeds or other lengths are NOT RECOMMENDED.
-  - Wallets which use a 512-bit BIP-0032 master seed (BIP39) SHOULD generate a fresh 128-bit master seed and encourage users to sweep funds to a new seed
-    - This can be done deterministically from the existing master seed using the [codex32 BIP-85 application](https://github.com/bitcoin/bips/pull/1958) without needing new entropy if it is merged.
+1. Encode the seed with threshold `0`, the identifier and index `S`.
+1. Display it and confirm it as below.
+1. Only then import the seed. If the user skips confirmation, the wallet MUST NOT import a fresh seed; the user restores from the backup instead.
 
-#### Human-readable part
-MUST NOT use custom human-readable parts `hrp` without first registering them with BIP-0093.
-- SHOULD use 2 character strings to simplify implementations' assumptions about lengths.
-MUST NOT be exposed as an option as `hrp` is fixed for specific network applications.
-MUST support 'ms' for Bitcoin mainnet wallet master seeds.
+For a share set:
 
-#### Threshold
+1. For a fresh seed, draw `k` random shares. The user never sees `S`.
+   For an existing seed, use `S` and draw `k` - 1 random shares.
+1. Display and confirm each string before drawing the next.
+1. Derive the remaining `n` - `k` shares by interpolation; display and confirm each one.
+1. After all `n` strings are confirmed, import the fresh seed or return to the wallet that was backed up.
 
-A digit in 0, 2 through 9.
+Every string MUST be confirmed, including derived shares.
+A share-set flow SHOULD NOT make the user see, write down or confirm `S`.
 
-For an unshared secret, the threshold parameter (the first digit of the data part) is ignored.
-US Wallets MAY use the threshold digit as a cosmetic identifier character, provided it is a digit.
-If the identifier is unspecified the digit "0" is recommended.
+### Display
 
-#### Identifier
+* Strings SHOULD be shown in uppercase, as BIP-93 recommends for handwriting and QR codes, in a monospaced font, split into 4-character windows.
+* Windows SHOULD be separated by a character that cannot be typed, such as U+2004 (three-per-em space). Confirmation can then reject entries that contain it.
+* Wallets SHOULD provide a template with numbered boxes; the numbers are not copied. Copying and screenshots SHOULD be restricted where possible.
+* A wallet that shows a stored seed again SHOULD reproduce the user's original strings. If it cannot, it MUST say the new string differs from their backup.
 
-A four-character, valid lowercase bech32 string (not 1, i, o or b) to use in the resulting BIP-93 output.
-If not specified, this SHOULD be generated from the master seed's bech32-encoded bip32 fingerprint.
-- By assuming this default, even stateless wallets MAY give useful help finding the correct codex32 strings to import given descriptors and PSBTs.
-Wallets MAY fix 1-2 identifier characters to store public information or cosmetically brand strings.
-Wallets MUST NOT fix 3+ characters as this harms disambiguation of different master seeds.
-MUST NOT use hash functions (e.g. RIPEMD160, sha256d) of `master_seed`, `master_xprv` or any other private data to set the identifier.
-  - "seed_id" which was RIPEMD160(master_seed) TODO (verify this isn't Hash160(master_seed)) and "WIF" which appends SHA256d(x10+seed_hex+x01)[:4] have both been deprecated for years and at any rate are less useful and safe than the fingerprint.
-  - Hashes help an attacker with part of the seed brute force what's left. Hashes are much faster than public key derivations.
-SHOULD NOT reuse any specific identifier across multiple master seeds the user may need to disambiguate.
-- Wallets should store, subject to hardware limitations, the identifiers used and their corresponding master public key fingerprint to assist with ensuring uniqueness by warning the user they're reusing an identifier previously confirmed.
+### Confirmation
 
-US Wallets ONLY:
-MAY use non-cryptographically secure deterministic default identifiers (e.g. Parity, CRC or BCH codes) to improve overall error correction.
-- US Wallets that plan to support SSS MUST remove this code from their implementation prior to beginning work to implement SSS.
+The user re-enters each string from their copy.
 
-### Extract and encode entropy
+* Entry MUST exactly match. There is no error correction during confirmation.
+* The header MUST NOT be pre-filled. Pasted text SHOULD be refused.
+* Wallets SHOULD highlight each window that contains an error, but only once it is complete and never at finer resolution.
+  Correct windows SHOULD be locked.
+* If the user's copy is wrong, the wallet SHOULD let them show the string again to fix it, then confirm the whole string again.
 
-Existing master seeds are converted to bech32 characters. For 128-bit seeds there are 2 padding bits, for 256-bit seeds there are 4 padding bits. 
-Padding SHOULD be set by this CRC polynomial: `(1 << pad_len) | 3` using 0 initial value.
+Desktop wallets SHOULD use full verification: the user types every string.
 
-```python3
-def compute_crc(crc_len, values):
-    """Internal function that computes a CRC checksum for padding."""
-    if not 0 <= crc_len < 5: # Codex32 string CRC padding
-        raise InvalidLength(f"{crc_len!r} (expected int in 0..4)")
-    # Define the CRC polynomial (x^crc_len + x + 1) optimal for 1-4
-    polynomial = (1 << crc_len) | 3
-    crc = 0
-    for i, bit in enumerate(values):
-        if bit not in (0, 1):
-            raise InvalidDataValue(f" 0 or 1 index={i} value={bit}")
-        crc = (crc << 1) | int(bit)
-        if crc & (1 << crc_len):
-            crc ^= polynomial
-    return crc & (2 ** crc_len - 1) # Return last crc_len bits as CRC
+Wallets with limited input MAY use partial verification:
 
+1. Split each string into groups of three windows.
+1. For each group, hide one window at random and ask for it.
+   Offer the correct window and decoys taken from other windows of the set, at least 6 options for 128-bit seeds and 8 for 256-bit.
+1. A wrong answer is reported, and that group MUST later be answered right on the first try with new options. Viewing the string again restarts the test.
 
-def convertbits(data, frombits, tobits, pad=True, pad_val=-1):
-    """General power-of-2 base conversion with CRC padding."""
-    acc = 0
-    bits = 0
-    ret = []
-    maxv = (1 << tobits) - 1
-    max_acc = (1 << (frombits + tobits - 1)) - 1
-    for i, value in enumerate(data):
-        if value < 0 or (value >> frombits):
-            raise InvalidDataValue(f" 0 though {frombits} index={i} value={value}")
-        acc = ((acc << frombits) | value) & max_acc
-        bits += frombits
-        while bits >= tobits:
-            bits -= tobits
-            ret.append((acc >> bits) & maxv)
-            acc = acc & ((1 << bits) - 1)
-    if pad and bits:
-        if pad_val == -1:  # Use CRC padding
-            data_bits = convertbits(ret, tobits, 1) + convertbits([acc], bits, 1)
-            pad_val = compute_crc(tobits - bits, convertbits(data_bits, tobits, 1))
-        ret.append(((acc << (tobits - bits)) + pad_val) & maxv)
-    elif bits >= frombits:
-        raise IncompleteGroup(f"{bits} bits left over")
-    return ret
-```
-
-Rationale: using a CRC code slightly helps error detection beyond the limits of the codex32 checksum, these are also hand-computable. It covers only the master seed bits as header data is not necessary to recover.
-
-### Display and confirmation
-
-#### Display guidance
-
-1. Wallets SHOULD split the uppercase codex32 string into 4-character windows.
-1. Insert a three-per-em space between windows and two between every 6 window group.
-1. Instruct users to write down their codex32 string on one line and/or provide a template.
-1. To the extent possible given screen limitations, display the formatted string.
-    - Monospaced font SHOULD be used for legibility, even if it is not elsewhere.
-    - Capability to copy or screenshot the string SHOULD be restricted, if possible.
-    - If the wallet must break the string in pieces, it SHOULD number the views.
-      - The user SHOULD NOT write these numbers so a template SHOULD be provided.
-1. When the user indicates transcription is complete, confirmation SHOULD start.
-
-#### Confirmation guidance
-
-During confirmation, wallets:
-
-- MUST NOT provide error correction.
-  - All final entry MUST exactly match the correct string.
-- SHOULD only display characters in the upper-case bech32 character set.
-  - MAY attempt to silently replace invalid characters with the bech32 character commonly confused with their keystroke.
-    - e.g. B with 8 or O with 0 and I with L.
-- SHOULD highlight red completed 4-character windows that contain an error.
-  - Preferred to highlighting incorrect windows so everything after an insert or delete does not turn red.
-- Error detection MUST NOT highlight error locations at finer resolution than 4-character windows.
-- MUST NOT flag/highlight until a window is complete, at the earliest.
-  - MAY delay, slow fade, or post-pone this until full entry to avoid distracting the user.
-  - Unless it is the last window in a string not divisible by 4. Then it is considered complete when its length is correct.
-- SHOULD lock correctly entered, unhighlighted boxes from further edits and turn their font color dark green.
-  - This feels satisfying and looks like a "progress bar", practically it prevents entry of new errors after confirmation.
-- MAY highlight incorrect strings or incorrect 4-character windows.
-
-There are two verification types:
-* Full verification which Desktop Wallets SHOULD use.
-* Partial verification which other wallets MAY use, particularly those with limited-input.
-
-These have different assurances of string fidelity, vulnerability to keyloggers, shoulder surfing, user fatigue, user skipping due to time costs, ease of entry, and speed.
-- If the user skips validation of any string, the wallet MUST NOT automatically import a fresh master seed. A full recovery MUST be performed from the backup to access the seed.
-- They should be able to continue confirmation where they left off later, subject to hardware limitations.
-
-#### Partial Verification
-
-If supported, SHOULD support 128-bit and/or 256-bit seeds, MAY support it for 512-bit seeds.
-
-Steps:
-1. Split the codex32 string into 4-character windows (the last window may be less).
-1. Combine consecutive windows into groups of (up to) three windows each.
-1. For each group, display it and have the user confirm one window at random.
-  - e.g. `MS10 TEST ____`, `___ TEST STUV`, or `MS10 ____ STUV`.
-  - Pick some other undisplayed windows from the string(s) at random as options.
-    - Minimum options REQUIRED: 6 for 128-bit entropy, 8 for 256-bit entropy.
-      - "entropy" is the total bits extracted from the master seed or RNG earlier.
-    - For every 128-bits additional entropy, minimum options increases by 2, for example a 512-bit seed requires minimum 12 options.
-  - Add the correct window to the options, then the wallet MUST shuffle the combined options.
-  - If user selects or types the wrong window, a wallet MUST:
-    - Advise it was incorrect and to check their codex32 backup.
-    - Request they try again.
-    - MAY require they start over from the beginning to discourage guessing.
-    - MAY require the group or window in question be revisited at the end until it is correct on the first try.
-    - SHOULD exclude windows confirmed on the first try from being selected again in either optional approach.
-All groups ensures wallets MUST at the very least display what is unconfirmed.
-
-#### Full Verification
-
-Steps:
-
-1. The user should type the string. To the extent possible given screen limitations, data should be displayed in uppercase with visually distinct four-character windows.
-  - The `MS1` prefix MUST NOT be pre-filled.
-  - The header MUST NOT be pre-filled.
-  - Wallets MAY highlight windows, groups of windows or strings red that contain at least one error, but
-    - This includes substitutions, insertions, deletions, transpositions, etc
-  - they MUST NOT highlight specific error characters or locations.
-1. If any errors arise, pressing tab should jump to the next error window, and shift tab to the previous. Space bar may also be bound to this as the strings do not contain spaces that need to be typed, they are only cosmetic. 
-1. When all characters are correctly entered the entire string will then be locked with dark green text.
-1. The software SHOULD procede to the next step automatically without requesting submission.
-1. After verification of the final string the wallet should recover the master seed and import it.
-1. Wallets MAY make the user perform a recovery from scratch after verification as an extra layer of assurance the backup has been created and transcribed correctly.
-
-
-
-
-
-## Codex32 share set generation guidance
-
-
-- 
-SSS Wallets: 
-SHOULD support k=2 and k=3 to allow users to more flexibly manage risk.
-MAY choose k=2 as a sensible default as it's the minimum threshold that provides SSS benefits.
-MAY support k=0 for fresh master seeds (be a SSS+US wallet) and SHOULD support k=0 for exporting existing master seeds.
-SHOULD NOT show `k` values higher than `3` in a simple GUI as they are a bad trade-off between usability and robustness (which
-are damaged) and security (which is improved). Power users may enable them.
-
-#### Identifier
-
-A four-character, valid lowercase bech32 string (not 1, i, o or b) to use in the resulting BIP-93 output. If not specified, this SHOULD be generated the master seed's bip32 fingerprint encoded as bech32.
-
-SSS wallet Note: for fresh codex32 share sets this default requires either generating the secret first to calculate the fingerprint or relabling the strings after the first `k` have been produced and the master seed payload recovered.
-- TODO Preferred implementation details are TBD but lean towards relabeling, but there are advantages either way.
-  - For example not extracting `k` entropy at once allows the system to accumulate more randomness between shares.
-
-##### Default identifier
-
-Regarding the identifer SecretGWs:
-MUST NOT fix 3+ characters as this harms disambiguation of different master seeds.
-SHOULD use a deterministic default Hash160 of `master_public_key` data (e.g. BIP-32 key fingerprint) so wallets MAY give useful help finding the correct codex32 strings given descriptors and PSBTs.
-SHOULD NOT use hash functions (e.g. RIPEMD160, sha256d) of `master_seed`, `master_xprv` or any other private data to set the identifier.
-  - "seed_id" which was RIPEMD160(master_seed) and "WIF" which appends SHA256d(x10+seed_hex+x01) have both been deprecated in Bitcoin Core for years and at any rate are less useful and less safe than the fingerprint.
-  - Hashes assist an attacker when he has between `k - 1` and `k` shares and is brute forcing what's left. Hashes are much much faster than public key derivations.
-MAY fix 1-2 identifier characters to store public information or cosmetically brand strings.
-
-
-US Wallets ONLY:
-
-May use non-cryptographically secure deterministic default identifiers (e.g. Parity, CRC or BCH codes) to improve overall error correction.
-- US Wallets that plan to support SSS MUST remove this code from their implementation prior to beginning work to implement SSS.
-
-SSS Wallets:
-
-MUST NOT ever derive a default identifier deterministically directly from the seed, private key(s), hashes there of or checksums there of without a contravening public derviation.
-
-#### Payload Padding
-Wallets SHOULD use payload `payload` CRC padding with polynomnial `1<<pad_len | 3` as this improves bit error detection to any 2 consecutive bits on 128-bit strings and any 4 consecutive bits on 256-bit strings. The bech32 character set is optimized to produce 1 bit errors between the most similar characters so this may help more than it looks at first glance.
-
-We should standardize this so that recovery tools of the future can exploit this to improve recovery speed 4-16x for 16 and 32 byte seeds.
-It IS hand computable, probably easier than the full sharing and checksumming but I haven't tested it yet.
-And ammendment to the book could be issued, and the presence or absence of that ammendement could inform error correction software whether to validate this CRC.
-Wallets MAY use other padding or allow power users to specify it.
-
-### Codex32 share set backup process:
-
-1. User selects OPTIONAL parameters (`k`, `identifier`, `n`, `bitlength`, `indices`...).
-1. For the first codex32 string:
-    1. Entropy or an existing master seed is extracted and encoded into a codex32 string.
-        * An existing master seed MUST use secret index 'S'.
-        * Other entropy SHOULD use share index 'A'.
-    1. Display and confirm as above.
-1. For the next `k - 1` codex32 shares:
-    1. Entropy is extracted and encoded in a codex32 share with the next share index.
-    1. Display and confirm as above.
-1. For the next `n - k` codex32 strings:
-    1. the initial `k` codex32 strings are interpolated to the next share index.
-    1. Display and confirm as above.
-1. Once all `n` shares are confirmed, the generation process is complete.
-1. The wallet should then either:
-  * for a fresh master seed, recover it, either:
-    * automatically from memory and import this.
-    * manually as per "Import Support" requesting `k` unique freshly written codex32 shares.
-  * an existing master seed, return to the wallet that was just backed up.
-
-
-Partial verification:
-
-    - At optional high `k` options exeed the windows available in the current undisplayed share and should be drawn from adjacent shares:
-      - At even higher `k` typing the 4-character window with a binary tree may be more ergonomic than scrolling.
+Wallets that compute a checksum for a hand-made payload MUST refuse input that is already a complete string with a bad checksum, and SHOULD warn that the payload's randomness is the user's responsibility.
