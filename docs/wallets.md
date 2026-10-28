@@ -87,7 +87,7 @@ There are two levels of generate support:
 * The ability to generate share sets on the device; here our guidance is more involved.
 
 Even wallets that don't need SSS features we encourage to support codex32 seed export as this has several advantages over BIP-39:
-- Checksum corrects up to 4 errors and 13 erasures during import
+- Checksum corrects up to 4 substitutions, 8 erasures, or 13 consecutive erasures during import
 - Hand-verifiable checksums isolate seed integrity checks from hardware exposure risks
 - Fixed-length compact encodings are faster to write and confirm
 - No wordlist or PBKDF2 dependencies
