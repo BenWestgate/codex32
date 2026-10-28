@@ -154,53 +154,31 @@ Unlike in BIP39 or other specifications, no PBKDF or other pre-processing should
 
 ### Extract and encode entropy
 
-Existing master seeds are converted to bech32 characters. For 128-bit seeds there are 2 padding bits, for 256-bit seeds there are 4 padding bits. 
-Padding SHOULD be set by this CRC polynomial: `(1 << pad_len) | 3` using 0 initial value.
+Fresh entropy or an existing master seed is converted to bech32 characters as described in BIP-93. For 128-bit seeds there are 2 padding bits, for 256-bit seeds there are 4 padding bits; see the BIP for other lengths.
+BIP-93 allows any padding bits, and importing wallets MUST accept any value.
+When generating, wallets SHOULD set the padding to a CRC of the master seed bits, computed by `crc_pad` below with the polynomial `(1 << pad_len) | 3` and an initial register value of 1.
 
-```python3
-def compute_crc(crc_len, values):
-    """Internal function that computes a CRC checksum for padding."""
-    if not 0 <= crc_len < 5: # Codex32 string CRC padding
-        raise InvalidLength(f"{crc_len!r} (expected int in 0..4)")
-    # Define the CRC polynomial (x^crc_len + x + 1) optimal for 1-4
-    polynomial = (1 << crc_len) | 3
+```python
+def crc_pad(seed: bytes) -> int:
+    """Return the padding bits for encoding seed as a codex32 payload."""
+    pad_len = -len(seed) * 8 % 5
+    if not pad_len:
+        return 0
+    polynomial = (1 << pad_len) | 3  # x^pad_len + x + 1, or x + 1 if pad_len is 1
+    seed_bits = [byte >> i & 1 for byte in seed for i in range(7, -1, -1)]
     crc = 0
-    for i, bit in enumerate(values):
-        if bit not in (0, 1):
-            raise InvalidDataValue(f" 0 or 1 index={i} value={bit}")
-        crc = (crc << 1) | int(bit)
-        if crc & (1 << crc_len):
+    # The leading 1 sets the initial register; the trailing zeros flush it.
+    for bit in [1] + seed_bits + [0] * pad_len:
+        crc = crc << 1 | bit
+        if crc >> pad_len:
             crc ^= polynomial
-    return crc & (2 ** crc_len - 1) # Return last crc_len bits as CRC
-
-
-def convertbits(data, frombits, tobits, pad=True, pad_val=-1):
-    """General power-of-2 base conversion with CRC padding."""
-    acc = 0
-    bits = 0
-    ret = []
-    maxv = (1 << tobits) - 1
-    max_acc = (1 << (frombits + tobits - 1)) - 1
-    for i, value in enumerate(data):
-        if value < 0 or (value >> frombits):
-            raise InvalidDataValue(f" 0 though {frombits} index={i} value={value}")
-        acc = ((acc << frombits) | value) & max_acc
-        bits += frombits
-        while bits >= tobits:
-            bits -= tobits
-            ret.append((acc >> bits) & maxv)
-            acc = acc & ((1 << bits) - 1)
-    if pad and bits:
-        if pad_val == -1:  # Use CRC padding
-            data_bits = convertbits(ret, tobits, 1) + convertbits([acc], bits, 1)
-            pad_val = compute_crc(tobits - bits, convertbits(data_bits, tobits, 1))
-        ret.append(((acc << (tobits - bits)) + pad_val) & maxv)
-    elif bits >= frombits:
-        raise IncompleteGroup(f"{bits} bits left over")
-    return ret
+    return crc
 ```
 
+The padding bits follow the master seed bits, most significant bit first.
+
 Rationale: using a CRC code improves error detection beyond the limits of the codex32 checksum, these are also hand-computable. Only master seed bits are covered as header is unnecessary to recover.
+The CRC is a recovery hint for generated seeds only; it does not affect validity and shares do not carry it.
 
 ### Display and confirmation
 
@@ -283,14 +261,20 @@ Steps:
 
 ### Test vectors
 
+These vectors use the fingerprint-derived default identifier and CRC padding.
+
 Vector 1 — 128-bit unshared
 - label: ut128-1
 - entropy_hex: 000102030405060708090a0b0c0d0e0f
-- codex32_unshared: ms10x3ppsqqqsyqcyq5rqwzqfpg9scrgwpugdxwtavhv7w48
+- master_fingerprint: 3442193e
+- padding_bits: 10
+- codex32_unshared: ms10x3ppsqqqsyqcyq5rqwzqfpg9scrgwp7njd7txhvmphuw
 - decoded_entropy_hex: 000102030405060708090a0b0c0d0e0f
 
 Vector 2 — 256-bit unshared
 - label: ut256-1
 - entropy_hex: ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100
-- codex32_unshared: ms10lwkksllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqpmlzwj5vy2a48f
+- master_fingerprint: fbad62ca
+- padding_bits: 1000
+- codex32_unshared: ms10lwkksllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqg4rk5j6z2mpj65
 - decoded_entropy_hex: ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100
