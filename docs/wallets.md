@@ -37,7 +37,7 @@ If a wallet is unable to meet these specifications, it is not an ECW and it SHOU
 
 ## Import Support
 
-Wallets SHOULD support import of 128- and 256-bit seeds; 512-bit seeds are optional; other lengths are NOT RECOMMENDED. 128-bit seeds encode as 48-character codex32 strings, including the `MS1` prefix. 256-bit seeds encode as 74-character codex32 strings. For other bit-lengths, see the BIP.
+Wallets SHOULD support import of 128- and 256-bit seeds; the other seed lengths defined by BIP-93 (160, 192, 224 and 512 bits) are optional. 128-bit seeds encode as 48-character codex32 strings, including the `MS1` prefix. 256-bit seeds encode as 74-character codex32 strings. For other bit-lengths, see the BIP.
 
 The process for entering codex32 strings is:
 
@@ -106,9 +106,9 @@ The remainder of this sub-heading gives guidance on exporting seeds as codex32 s
 For single-string codex32 secret exports ("unshared") the following semantics are REQUIRED.
 
 1. Bitlength
-   * Wallets MUST support generating 128- or 256-bit seeds;
-   * SHOULD support generating 128-bit seeds;
-   * MAY support generating 256- or 512-bit seeds; other lengths are NOT RECOMMENDED.
+   * Generated seeds MUST use one of the master seed lengths defined by BIP-93.
+   * Wallets MUST support generating 128-bit or 256-bit seeds, and SHOULD default to 128 bits.
+   * Wallets MAY support generating the other lengths defined by BIP-93.
      - Wallets which use a 512-bit BIP-0032 master seed (BIP39) SHOULD generate a fresh 128-bit master seed and encourage users to sweep funds to a new seed rather than export it.
        - This can be done deterministically from the existing master seed using the [codex32 BIP-85 application](https://github.com/bitcoin/bips/pull/1958) without needing new entropy if it is merged.
 
@@ -127,10 +127,9 @@ For single-string codex32 secret exports ("unshared") the following semantics ar
      * Wallets should store, subject to hardware limitations, identifiers used and their corresponding master fingerprint to assist with ensuring uniqueness by warning the user they're reusing an identifier previously confirmed.
   
 1. Human-readable part policy
-   * Wallets MUST NOT use custom human-readable parts `hrp` without first registering them with [SLIP-0173](https://github.com/satoshilabs/slips/blob/master/slip-0173.md#uses-of-codex32).
-   * New `hrp` SHOULD use 2 character strings to simplify implementations' assumptions about lengths.
-   * Wallets MUST NOT expose `hrp` as an option as it's fixed by specific network applications.
-   * Bitcoin mainnet wallets MUST support 'ms' for master seeds.
+   * BIP-0032 master seeds and their shares use the human-readable part `ms`. Wallets MUST use it for every generated secret and share.
+   * Wallets MUST NOT expose the human-readable part as a user option.
+   * Codex32 strings for other applications use the human-readable parts listed in [SLIP-0173](https://github.com/satoshilabs/slips/blob/master/slip-0173.md#uses-of-codex32) and are outside the scope of this document.
 
 ### Codex32 secret backup process:
 
