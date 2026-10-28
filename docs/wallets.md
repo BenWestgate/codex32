@@ -126,8 +126,8 @@ For a share set:
 
 1. For a fresh seed, draw `k` random shares. The user never sees `S`.
    For an existing seed, use `S` and draw `k` - 1 random shares.
-1. Display and confirm each string before drawing the next.
-1. Derive the remaining `n` - `k` shares by interpolation; display and confirm each one.
+1. Display and confirm each string before drawing the next. Wallets SHOULD NOT draw ahead, so a weakly seeded generator gathers more entropy, including the user's timing, between draws.
+1. Derive the remaining shares by interpolation (`n` - `k`, or `n` - `k` + 1 for an existing seed, since `S` is not a card); display and confirm each one.
 1. After all `n` strings are confirmed, import the fresh seed or return to the wallet that was backed up.
 
 Every string MUST be confirmed, including derived shares.
