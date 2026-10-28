@@ -185,14 +185,17 @@ The CRC is a recovery hint for generated seeds only; it does not affect validity
 #### Display guidance
 
 1. Wallets SHOULD split the uppercase codex32 string into 4-character windows.
-1. Insert a three-per-em space between windows and two between every 6 window group.
-1. Instruct users to write down their codex32 string on one line and/or provide a template.
+1. Separate windows with a space and leave a wider gap after every fourth window, matching a template with four windows per row.
+    - Wallets MAY alternate the font weight of consecutive windows to help users keep their place.
+1. Instruct users to write down their codex32 string and provide a template.
+1. Show the details the user records with the string: the identifier and, for a share, the threshold and share index.
+    - For a freshly generated seed, wallets SHOULD also show the master fingerprint, so the user can record it apart from the backup and check it after a later recovery.
 1. To the extent possible given screen limitations, display the formatted string.
     - Monospaced font SHOULD be used for legibility, even if it is not elsewhere.
     - Capability to copy or screenshot the string SHOULD be restricted, if possible.
     - If the wallet must break the string in pieces, it SHOULD number the views.
       - The user SHOULD NOT write these numbers so a template SHOULD be provided.
-1. When the user indicates transcription is complete, confirmation SHOULD start.
+1. When the user indicates transcription is complete, the wallet SHOULD remove the string from the screen, including any terminal scrollback, and confirmation SHOULD start.
 
 #### Confirmation guidance
 
@@ -200,11 +203,12 @@ During confirmation, wallets:
 
 - MUST NOT provide error correction.
   - All final entry MUST exactly match the correct string.
+- SHOULD ignore spaces and letter case when comparing.
 - SHOULD only display characters in the upper-case bech32 character set.
   - MAY attempt to silently replace invalid characters with the bech32 character commonly confused with their keystroke.
     - e.g. B with 8 or O with 0 and I with L.
 - SHOULD highlight red completed 4-character windows that contain an error.
-  - Preferred to highlighting incorrect windows so everything after an insert or delete does not turn red.
+  - Wallets SHOULD align the entry with the correct string using the fewest edits before comparing windows, so an inserted or deleted character marks only the windows it affects instead of every later window.
 - Error detection MUST NOT highlight error locations at finer resolution than 4-character windows.
 - MUST NOT flag/highlight until a window is complete, at the earliest.
   - MAY delay, slow fade, or post-pone this until full entry to avoid distracting the user.
@@ -212,6 +216,8 @@ During confirmation, wallets:
 - SHOULD lock correctly entered, unhighlighted boxes from further edits and turn their font color dark green.
   - This feels satisfying and looks like a "progress bar", practically it prevents entry of new errors after confirmation.
 - MAY highlight incorrect strings or incorrect 4-character windows.
+
+Confirmation shows that the user could reproduce the string during setup. It cannot prove that the written backup was corrected, because the user may fix their entry from the highlights instead of fixing the backup. Wallets SHOULD tell the user to check and correct their written copy whenever a window is highlighted.
 
 There are two verification types:
 * Full verification which Desktop Wallets SHOULD use.
@@ -247,15 +253,17 @@ All groups ensures wallets MUST at the very least display what is unconfirmed.
 
 Steps:
 
-1. The user should type the string. To the extent possible given screen limitations, data should be displayed in uppercase with visually distinct four-character windows.
+1. With the original string no longer displayed, the user should type the whole string from their written copy. To the extent possible given screen limitations, data should be displayed in uppercase with visually distinct four-character windows.
   - The `MS1` prefix MUST NOT be pre-filled.
   - The header MUST NOT be pre-filled.
   - Wallets MAY highlight windows, groups of windows or strings red that contain at least one error, but
     - This includes substitutions, insertions, deletions, transpositions, etc
   - they MUST NOT highlight specific error characters or locations.
-1. If any errors arise, pressing tab should jump to the next error window, and shift tab to the previous. Space bar may also be bound to this as the strings do not contain spaces that need to be typed, they are only cosmetic. 
+1. If any windows are wrong, the wallet SHOULD ask the user to check those windows against their written copy and re-enter only them, starting from what they typed.
+    - Correct windows stay confirmed and locked. The user may retry as often as needed, or re-enter the whole string.
+    - In a graphical wallet, pressing tab should jump to the next error window, and shift tab to the previous. Space bar may also be bound to this as the strings do not contain spaces that need to be typed, they are only cosmetic.
 1. When all characters are correctly entered the entire string will then be locked with dark green text.
-1. The software SHOULD procede to the next step automatically without requesting submission.
+1. The software SHOULD proceed to the next step automatically without requesting submission.
 1. After verification of the final string the wallet should recover the master seed and import it.
 1. Wallets MAY make the user perform a recovery from scratch after verification as an extra layer of assurance the backup has been created and transcribed correctly.
 
