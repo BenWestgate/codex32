@@ -121,12 +121,11 @@ For single-string codex32 secret exports ("unshared") the following semantics ar
    * Only unshared secrets MAY use an identifier derived from the secret.
      * For a freshly generated unshared secret, the default SHOULD be the first four bech32 characters (20 bits) of its BIP-0032 master key fingerprint.
        * By assuming this default, even stateless wallets MAY give useful help finding the correct codex32 strings to import given descriptors and PSBTs.
-       * Anyone who sees the identifier learns 20 bits of the fingerprint, which is already public wherever descriptors or PSBTs are shared.
-   * Share sets MUST NOT use an identifier derived from the secret. Their identifier SHOULD be user selected or four uniformly random bech32 characters.
-     * Every share carries the identifier. A secret-derived identifier would give anyone holding fewer than the threshold of shares a test against candidate secrets, which Shamir's secret sharing is meant to rule out, and would link each share to the wallet's public fingerprint.
-   * Any other identifier SHOULD be user selected or uniformly random, including when encoding an existing master seed.
-   * Wallets MAY allow user specified identifiers.
-   * Identifiers SHOULD be distinct for every master seed and share set the user may need to disambiguate.
+   * Share sets MUST NOT use an identifier derived from the secret.
+     * Every share carries the identifier. A secret-derived identifier would give anyone holding fewer than the threshold of shares a test against candidate secrets, which Shamir's secret sharing is meant to rule out.
+   * Every other identifier, including those of share sets and of an existing master seed, SHOULD be user selected or four uniformly random bech32 characters.
+   * Identifiers SHOULD be distinct from all other identifiers the user may need to disambiguate.
+     * Wallets SHOULD show the user a generated identifier, random or fingerprint-derived, and let the user edit it, since the user may know it matches another backup they hold.
      * A wallet MUST NOT create two different share sets of the same secret with the same header, because combining shares from different sets with the same header produces a wrong secret with a valid checksum.
      * Collisions are unlikely but a wallet MAY reject identifiers that conflict with an existing identifier; a wallet drawing a random identifier SHOULD draw again on a conflict.
      * Wallets should store, subject to hardware limitations, identifiers used and their corresponding master fingerprint to assist with ensuring uniqueness by warning the user they're reusing an identifier previously confirmed.
