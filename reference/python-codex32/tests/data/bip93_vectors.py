@@ -72,11 +72,21 @@ VECTORS_6_7_8 = [  # (master seed hex, codex32 secret)
     ("404142434445464748494a4b4c4d4e4f505152535455565758595a5b", "ms10seedsgpq5ys6yg4rywjzfff95cn2wfag9z5jn2324v46ct9d9hrcduqw8c3lccl"),
 ]
 
-VECTOR_CL = {
+VECTOR_9 = {
     "codex32_luea": "cl10lueasd35kw6r5de5kueedxyesqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqanvrktzhlhusz",
     "codex32_cln2": "cl10cln2sd35kw6r5de5kueedxyesqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqn9lcvcu7cez4s",
     "codex32_peev": "cl10peevst6cqh0wu7p5ssjyf4z4ez42ks9jlt3zneju9uuypr2hddak6tlqsjhsks4laxts8q",
+    "ms_peev": "ms10peevst6cqh0wu7p5ssjyf4z4ez42ks9jlt3zneju9uuypr2hddak6tlqstxmpzl24l6e0d",
 }
+
+VECTOR_10 = {
+    "share_a": "test_vector12spana320zyxwvutsrqpnmlkjhgfedca320zyxwvutsrqpnmlkjhgfedca304ppsqh4l7v3dh",
+    "share_c": "test_vector12spancacdefghjklmnpqrstuvwxyz023acdefghjklmnpqrstuvwxyz023jxmjy7q9xl7d3ul",
+    "derived_d": "test_vector12spandll4f8jlh4e5vdvuldlfxu2jhdnll4f8jlh4e5vdvuldlfxu2jhdnx3pe3yqzdl7p30y",
+    "secret_s": "test_vector12spans6xqguzttxkeqnjsjzv4jv3nz5k6xqguzttxkeqnjsjzv4jv3nz5kdf37v5qm2l7l3az",
+}
+
+VECTOR_11 = "a83characterlongcodex32humanreadablepartforsecretsharewiththedigit1andthelettersbio10keyss9mfjjk25y05e3nq"
 
 
 VALID_CODEX32 = [
@@ -237,6 +247,21 @@ INVALID_PREFIX_OR_SEPARATOR = [
     "10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxhkd4f70m8lgws",
     "m10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxx8t28z74x8hs4l",
     "s10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxh9d0fhnvfyx3x",
+]
+
+VALID_NOT_MASTER_SEED = [
+    "m10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxx8t28z74x8hs4l",
+    "s10fauxsxxxxxxxxxxxxxxxxxxxxxxxxxxh9d0fhnvfyx3x",
+]
+
+INVALID_HRP_VECTORS = [
+    # expanded codeword lengths 94 and 95
+    "test_vector12spans6xqguzttxkeqnjsjzv4jv3nz5k6xqguzttxkeqnjsjzv4jv3nz5kp0f0tlr2cxh0t",
+    "test_vector12spans6xqguzttxkeqnjsjzv4jv3nz5k6xqguzttxkeqnjsjzv4jv3nz5c2m7mxmk8s5qecp",
+    # checksum computed with the uppercase form of the HRP
+    "CL10PEEVST6CQH0WU7P5SSJYF4Z4EZ42KS9JLT3ZNEJU9UUYPR2HDDAK6TLQS3J5AYX4Y08079",
+    # HRP longer than 83 characters
+    "a84characterslongcodex32humanreadablepartforsecretsharewiththedigit1andthelettersbio10keyss9hqxu3pxsnkdkth",
 ]
 
 BAD_CASES = [

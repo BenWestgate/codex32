@@ -101,7 +101,8 @@ def u5_parse(bech: str) -> tuple[str, list[int]]:
         raise InvalidCase("mixed upper/lower case bech32 string")
     if (pos := (bech := bech.lower()).rfind("1")) < 1:
         raise MissingHrp("empty HRP") if not pos else SeparatorNotFound("'1' not found")
-    hrp = bech[:pos]
+    if len(hrp := bech[:pos]) > 83:
+        raise InvalidLength(f"HRP has {len(hrp)} characters, the maximum is 83")
     data = chars_to_u5(bech[pos + 1 :])
     return hrp, data
 
