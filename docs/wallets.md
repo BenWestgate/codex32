@@ -184,7 +184,7 @@ The CRC is a recovery hint for generated seeds only; it does not affect validity
 
 1. Wallets SHOULD split the uppercase codex32 string into 4-character windows.
 1. Separate windows with a space and leave a wider gap after every fourth window, matching a template with four windows per row.
-    - Wallets MAY alternate the font weight of consecutive windows to help users keep their place.
+    - Wallets MAY alternate the font weight, color or background of consecutive windows to help users keep their place.
 1. Instruct users to write down their codex32 string and provide a template.
 1. Show the details the user records with the string: the identifier and, for a share, the threshold and share index.
     - For a freshly generated seed, wallets SHOULD also show the master fingerprint, so the user can record it apart from the backup and check it after a later recovery.
@@ -193,7 +193,7 @@ The CRC is a recovery hint for generated seeds only; it does not affect validity
     - Capability to copy or screenshot the string SHOULD be restricted, if possible.
     - If the wallet must break the string in pieces, it SHOULD number the views.
       - The user SHOULD NOT write these numbers so a template SHOULD be provided.
-1. When the user indicates transcription is complete, the wallet SHOULD remove the string from the screen, including any terminal scrollback, and confirmation SHOULD start.
+1. When the user indicates transcription is complete, the wallet SHOULD remove the string from the screen and confirmation SHOULD start.
 
 #### Confirmation guidance
 
@@ -201,8 +201,9 @@ During confirmation, wallets:
 
 - MUST NOT provide error correction.
   - All final entry MUST exactly match the correct string.
-- SHOULD ignore spaces and letter case when comparing.
-- SHOULD only display characters in the upper-case bech32 character set.
+- SHOULD ignore spaces when comparing.
+- SHOULD only let the user type and see upper-case bech32 characters, as during import.
+  - An all-uppercase or all-lowercase entry is fine, but mixed case is invalid in a codex32 string and MUST NOT be accepted.
   - MAY attempt to silently replace invalid characters with the bech32 character commonly confused with their keystroke.
     - e.g. B with 8 or O with 0 and I with L.
 - SHOULD highlight red completed 4-character windows that contain an error.
