@@ -99,7 +99,7 @@ Supporting share set generation is a little more involved so the tradeoff betwee
 implementation complexity and user value is less clear, especially since the
 Codex provides users instructions on doing share generation themselves.
 
-The guidance below starts with exporting seeds as codex32 secrets without SSS. Wallet developers planning to implement SSS should read it first as almost all of it applies to share sets too.
+The guidance below starts with exporting seeds as codex32 secrets without SSS. Wallet developers planning to implement SSS should read it first as almost all of it applies to share sets too; [Share set generation](#share-set-generation) covers the differences.
 
 ### Unshared (single-string) semantics — REQUIRED
 
@@ -265,6 +265,36 @@ Steps:
 1. The software SHOULD proceed to the next step automatically without requesting submission.
 1. After verification of the final string the wallet should recover the master seed and import it.
 1. Wallets MAY make the user perform a recovery from scratch after verification as an extra layer of assurance the backup has been created and transcribed correctly.
+
+### Share set generation
+
+Share sets follow the guidance above, with these additions.
+
+1. Parameters
+   * Wallets MUST support thresholds of 2 and 3, and MAY support any threshold from 2 to 9.
+   * Wallets MUST support any number of shares from the threshold to 10, and MAY support up to 31.
+   * Wallets MAY offer 2-of-3 and 3-of-5 as defaults.
+   * The identifier MUST follow the identifier policy above: user selected or random, never derived from the secret.
+
+1. Share indices
+   * Wallets SHOULD choose the share indices uniformly at random from the 31 characters other than `s`, unless the user chooses them.
+     * Indices taken in alphabetical order (`a`, `c`, `d`, ...), as in BIP-93's hand procedure, tell the holder of a share about the number of other shares. Any distinct indices produce valid shares, and random ones reveal nothing about the other shares.
+
+1. Fresh secret
+   * Generate one share with a uniformly random payload from a cryptographically secure random number generator, display and confirm it as above, then generate the next. Repeat until there are threshold-many shares, as in BIP-93's "For a fresh secret", then derive the remaining shares by interpolation. The user never sees the secret.
+     * Generating each share only after the previous one is confirmed lets the wallet mix re-entry timings and keystrokes into its entropy pool, so the shares are more independent.
+   * Wallets SHOULD redraw the last random share, before displaying it, until the secret it determines has the CRC padding described above and is a valid BIP-0032 master seed, so recovered secrets carry the same padding hint as unshared ones.
+     * Each draw succeeds with probability 2<sup>-pad_len</sup>, so this takes 4 draws on average for a 128-bit seed and 16 for a 256-bit seed.
+
+1. Existing secret
+   * Encode the master seed with the new set's header (threshold, identifier and share index `s`), as in BIP-93's "For an existing secret". When re-sharing a codex32 secret, keep its payload unchanged.
+   * Generate threshold minus one shares one at a time, as for a fresh secret, then derive the rest by interpolation. With threshold `k` and `n` shares, derive `n` - `k` + 1 shares, because the secret is not one of the user's shares.
+   * The new set's header MUST differ from the header of any existing share set.
+
+1. One share at a time
+   * Wallets SHOULD display and confirm each share, including derived ones, before displaying the next, so that at most one unconfirmed share exists at a time.
+   * The wallet MUST NOT import the secret until every share is confirmed.
+   * If creation stops before every share is confirmed, the wallet SHOULD tell the user to void the shares written for that set. Shares of an existing secret from an abandoned set still reveal the secret to anyone who collects a threshold of them.
 
 ### Test vectors
 
