@@ -301,15 +301,15 @@ These vectors use the fingerprint-derived default identifier and CRC padding.
 Vector 1 — 128-bit unshared
 - label: ut128-1
 - entropy_hex: 000102030405060708090a0b0c0d0e0f
-- master_fingerprint: 3442193e
-- padding_bits: 10
-- codex32_unshared: ms10x3ppsqqqsyqcyq5rqwzqfpg9scrgwp7njd7txhvmphuw
+- master_fingerprint (hex): 3442193e
+- padding_bits (binary): 10
+- codex32_unshared (bech32): ms10x3ppsqqqsyqcyq5rqwzqfpg9scrgwp7njd7txhvmphuw
 - decoded_entropy_hex: 000102030405060708090a0b0c0d0e0f
 
 Vector 2 — 256-bit unshared
 - label: ut256-1
 - entropy_hex: ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100
-- master_fingerprint: fbad62ca
-- padding_bits: 1000
-- codex32_unshared: ms10lwkksllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqg4rk5j6z2mpj65
+- master_fingerprint (hex): fbad62ca
+- padding_bits (binary): 1000
+- codex32_unshared (bech32): ms10lwkksllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqg4rk5j6z2mpj65
 - decoded_entropy_hex: ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100
