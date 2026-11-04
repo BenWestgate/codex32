@@ -37,7 +37,7 @@ If a wallet is unable to meet these specifications, it is not an ECW and it SHOU
 
 ## Import Support
 
-Wallets SHOULD support import of 128- and 256-bit seeds; the other seed lengths defined by BIP-93 (160, 192, 224 and 512 bits) are optional. 128-bit seeds encode as 48-character codex32 strings, including the `MS1` prefix. 256-bit seeds encode as 74-character codex32 strings. For other bit-lengths, see the BIP.
+Wallets SHOULD support import of 128- and 256-bit seeds; the other seed lengths defined by BIP-93 are optional. 128-bit seeds encode as 48-character codex32 strings, including the `MS1` prefix. 256-bit seeds encode as 74-character codex32 strings. For other bit-lengths, see the BIP.
 
 The process for entering codex32 strings is:
 
@@ -106,7 +106,6 @@ The guidance below starts with exporting seeds as codex32 secrets without SSS. W
 For single-string codex32 secret exports ("unshared") the following semantics are REQUIRED.
 
 1. Bitlength
-   * Generated seeds MUST use one of the master seed lengths defined by BIP-93.
    * Wallets MUST support generating 128-bit or 256-bit seeds, and SHOULD default to 128 bits.
    * Wallets MAY support generating the other lengths defined by BIP-93.
      - Wallets which use a 512-bit BIP-0032 master seed (BIP39) SHOULD generate a fresh 128-bit master seed and encourage users to sweep funds to a new seed rather than export it.
