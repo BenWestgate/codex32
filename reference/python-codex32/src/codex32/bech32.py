@@ -111,13 +111,14 @@ def u5_decode(bech: str, encodings: list[Checksum]) -> tuple[str, list[int], Che
     hrp, data = u5_parse(bech)
     e = MissingEncoding("no encoding or encodings were passed")
     for spec in encodings:
-        if len(hrp) <= (datlen := len(bech) - 1 - spec.cs_len):
-            if datlen in (c := spec.coverage):
+        explen = len(bech32_hrp_expand(hrp)) + len(data)
+        if spec.cs_len <= len(data):
+            if explen in (c := spec.coverage):
                 if spec.verify(bech32_hrp_expand(hrp) + data):
                     return hrp, data[: -spec.cs_len], spec
                 e = InvalidChecksum(f"{spec.kind} checksum invalid for hrp and data")
             if not isinstance(e, InvalidChecksum):
-                e = InvalidLength(f"{datlen} chars {spec.kind} reqs {min(c)}..{max(c)}")
+                e = InvalidLength(f"{explen} expanded, {spec.kind}: {min(c)}-{max(c)}")
         if not isinstance(e, (InvalidLength, InvalidChecksum)):
             e = MissingChecksum(f"{spec.kind}: {len(data)} data chars < {spec.cs_len}")
     raise e

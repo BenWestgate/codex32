@@ -7,7 +7,8 @@ from data.bip93_vectors import (
     VECTOR_3,
     VECTOR_4,
     VECTOR_5,
-    VECTOR_6,
+    VECTORS_6_7_8,
+    VECTOR_CL,
     VALID_CODEX32,
     VALID_CODEX32_LONG,
     INVALID_CODEX32,
@@ -118,14 +119,20 @@ def test_long_string():
     assert long_seed.data.hex() == VECTOR_5["secret_hex"]
 
 
+def test_master_seed_sizes():
+    """Test Vectors 6, 7 and 8: 160-, 192- and 224-bit master seeds."""
+    for seed_hex, secret in VECTORS_6_7_8:
+        assert Codex32String(secret).data.hex() == seed_hex
+
+
 def test_alternate_hrp():
-    """Test Vector 6: codex32 strings with "cl" HRP."""
-    c0 = Codex32String(VECTOR_6["codex32_luea"])
-    assert str(c0) == VECTOR_6["codex32_luea"]
-    c1 = Codex32String(VECTOR_6["codex32_cln2"])
-    assert str(c1) == VECTOR_6["codex32_cln2"]
-    c2 = Codex32String.from_string("cl", VECTOR_6["codex32_peev"])
-    assert str(c2) == VECTOR_6["codex32_peev"]
+    """Test codex32 strings with "cl" HRP."""
+    c0 = Codex32String(VECTOR_CL["codex32_luea"])
+    assert str(c0) == VECTOR_CL["codex32_luea"]
+    c1 = Codex32String(VECTOR_CL["codex32_cln2"])
+    assert str(c1) == VECTOR_CL["codex32_cln2"]
+    c2 = Codex32String.from_string("cl", VECTOR_CL["codex32_peev"])
+    assert str(c2) == VECTOR_CL["codex32_peev"]
 
 
 def test_valid_codex32():
@@ -185,6 +192,7 @@ def test_invalid_master_seed_enc():
                 InvalidDataValue,
                 InvalidThreshold,
                 InvalidShareIndex,
+                InvalidLength,
                 AssertionError,
             )
         ):

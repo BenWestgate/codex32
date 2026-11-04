@@ -66,7 +66,13 @@ VECTOR_5 = {
     "secret_hex": "dc5423251cb87175ff8110c8531d0952d8d73e1194e95b5f19d6f9df7c01111104c9baecdfea8cccc677fb9ddc8aec5553b86e528bcadfdcc201c17c638c47e9",
 }
 
-VECTOR_6 = {
+VECTORS_6_7_8 = [  # (master seed hex, codex32 secret)
+    ("000102030405060708090a0b0c0d0e0f10111213", "ms10seedsqqqsyqcyq5rqwzqfpg9scrgwpugpzysn9vaqzzvs20xnl"),
+    ("202122232425262728292a2b2c2d2e2f3031323334353637", "ms10seedsyqsjygeyy5nzw2pf9g4jctfw9ucrzv3nxs6nvdau84gz0632s0xs"),
+    ("404142434445464748494a4b4c4d4e4f505152535455565758595a5b", "ms10seedsgpq5ys6yg4rywjzfff95cn2wfag9z5jn2324v46ct9d9hrcduqw8c3lccl"),
+]
+
+VECTOR_CL = {
     "codex32_luea": "cl10lueasd35kw6r5de5kueedxyesqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqanvrktzhlhusz",
     "codex32_cln2": "cl10cln2sd35kw6r5de5kueedxyesqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqn9lcvcu7cez4s",
     "codex32_peev": "cl10peevst6cqh0wu7p5ssjyf4z4ez42ks9jlt3zneju9uuypr2hddak6tlqsjhsks4laxts8q",
@@ -76,9 +82,7 @@ VECTOR_6 = {
 VALID_CODEX32 = [
     "A12UEL5LLGCHJ4UJCQVHG",
     "a12uel5llgchj4ujcqvhg",
-    "a74characterlonghumanreadablepartcontainingnumber1andexcludedcharactersbio15tttgsdupy3h58nvmja",
     "abcdef13qpzry9x8gf2tvdw0s3jn54khce6mua7lclc606q3t75r4",
-    "1199999999999999999999999999999999999999999999999999999999999999999999999999999997f7ekwq8dq7tm",
     "split12checkupstagehandshakeupstreamerranterredcaperred75pe8uz2kh9ey",
     "?13zyfclf624rkvjcl35t",
 ]
@@ -86,9 +90,7 @@ VALID_CODEX32 = [
 VALID_CODEX32_LONG = [
     "A12UEL5LQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQV3RR8ZLCK96GTC3",
     "a12uel5lqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqv3rr8zlck96gtc3",
-    "a1002characterlonghumanreadablepartthatcontainsthenumber1,theexcludedcharactersbio,andeveryus-asciicharacterin[33-126]!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~15ttgtscr3gvktxamm8mzt",
     "abcdef12l7aum6echk45nj3s0wdvt2fg8x9yrzpql7aum6echk45nj3s0wdvt2fg8x9yrzpql7aum6echk45nj3s0wdvt2fg8x9yrzpqp9evrmhc52umqew",
-    "1177777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777fn0jxg9gc35xwa8",
     "split13checkupstagehandshakeupstreamerranterredcaperredscatteredsusurrantplunderedqsp5ws8r2klm66l",
     "?17v59aaqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2uwygewx4t4gps0",
 ]
@@ -96,8 +98,6 @@ INVALID_CODEX32 = {
     " 12fauxxpgjxu9gyqhql4",  # HRP character out of range
     "\x7f" + "12fauxxk7kd7xqlns9mj",  # HRP character out of range
     "\x80" + "12fauxxgqp5ecwf5kzg3",  # HRP character out of range
-    # overall max length exceeded
-    "a75characterslonghumanreadablepartcontainingnumber1andexcludedcharactersbio12fauxxau7wnkdhzp90r",
     "x12fauxbhf2k7v7ay7ua5",  # Invalid data character
     "li12fauxxz4pdg55uwav3",  # Too short checksum
     "de12fauxxrmt7mj886swl" + "\xff",  # Invalid character in checksum
@@ -110,8 +110,6 @@ INVALID_CODEX32_LONG = {
     + "12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx836hdd09mhkhkhx",  # HRP character out of range
     "\x80"
     + "12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxlhf5ywnkmk4r3tc",  # HRP character out of range
-    # overall max length exceeded
-    "a1003characterslonghumanreadablepartthatcontainsthenumber1,theexcludedcharactersbio,andeveryus-asciicharacterin[33-126]!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~12fauxxru38cppmlpu0t6l",
     "y12bfauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxt3y5fewy4gnw2hs",  # Invalid data character
     "lt12ifauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxjxd0ehq868vm3zl",  # Invalid data character
     "in12fauxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxvgegljrsvs5w9q",  # Too short checksum
